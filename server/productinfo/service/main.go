@@ -41,13 +41,24 @@ func (s *Server) GetProduct(ctx context.Context, in *pb.ProductId) (*pb.Product,
 	return nil, fmt.Errorf("Product does not exist, id: %v", in.Value)
 }
 
+func productInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	log.Println("拦截器前置处理", info.FullMethod)
+
+	m, err := handler(ctx, req)
+
+	log.Printf("拦截器后置处理 %s", m)
+	return m, err
+}
+
+
+
 func main() {
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	s := grpc.NewServer()
+	s := grpc.NewServer(grpc.UnaryInterceptor(productInterceptor))
 
 
 	pb.RegisterProductInfoServer(s, &Server{})
